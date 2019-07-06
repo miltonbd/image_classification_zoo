@@ -9,7 +9,6 @@ import tensorflow as tf
 import os
 print("Tensorflow Version:{}".format(tf.version))
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-
 from arguments import *
 
 """
@@ -136,33 +135,35 @@ def test_step(images, labels):
   test_loss(t_loss)
   test_accuracy(labels, predictions)
 
-
-
-import sys
-
-def progress_bar(progress, count ,message):
-  sys.stdout.write('\r' + "{} of {}: {}".format(progress, count, message))
-
-
 def main(argv):
   if FLAGS.debug:
     print('non-flag arguments:', argv)
-  Epochs = FLAGS.epochs
+  epochs = FLAGS.epochs
   train_ds, test_ds = load_dataset()
 
-  for epoch in tqdm(range(Epochs)):
+  prev_test_accuracy=0
+  for epoch in tqdm(range(epochs)):
     saved_model_path=FLAGS.saved_model
-    tf.saved_model.save(model,saved_model_path)
-    exit(1)
+
     for train_obj in train_ds:
       train_step(train_obj)
-      msg="Train loss:{}, Accuracy:{}".format(train_loss.result(),train_accuracy.result())
-      progress_bar(epoch, Epochs, msg)
+      current_train_loss=train_loss.result()
+      current_train_accuracy = train_accuracy.result()
+      msg="Train loss:{}, Accuracy:{}".format(current_train_loss, current_train_accuracy)
+      progress_bar(epoch, epochs, msg)
 
     for test_images, test_labels in test_ds:
       test_step(test_images, test_labels)
 
+    test_loss.result(),
+    current_test_accuracy = test_accuracy.result()
+    if current_test_accuracy>prev_test_accuracy:
+      print("\nPrev Acc:{}, New Acc:{}, Saving Model:{}".format(prev_test_accuracy, current_test_accuracy, saved_model_path))
+      tf.saved_model.save(model, saved_model_path)
+      prev_test_accuracy = current_test_accuracy
+
     template = 'Epoch {}, Loss: {}, Accuracy: {}%, Test Loss: {}, Test Accuracy: {}'
+
     print(template.format(epoch + 1,
                           train_loss.result(),
                           train_accuracy.result() * 100,
